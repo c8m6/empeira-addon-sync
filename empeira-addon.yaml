@@ -1,0 +1,4 @@
+schema: 1
+description: Synchronize files and directories using host rsync
+executable: bin/sync
+commands: {}

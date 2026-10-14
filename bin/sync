@@ -1,0 +1,70 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+# SPDX-License-Identifier: AGPL-3.0-only
+
+unknown = ARGV - %w[--dry-run --help]
+abort "Error: Unsupported argument: #{unknown.first}. Use --help." unless unknown.empty?
+
+if ARGV.include?('--help')
+  puts <<~HELP
+    Usage: empeira addon sync [--dry-run] [--help]
+
+    Synchronize all addons.sync.config.targets in order using host rsync.
+    Each target contains source and destination only.
+
+    --dry-run  Preview transfers without changing files.
+    --help     Show this help.
+
+    Uses rsync -a --exclude=.git/; never deletes extra destination files.
+    Local paths are relative to EMPEIRA_CONTROL_REPO.
+    End remote directory sources with / to copy their contents.
+  HELP
+  exit 0
+end
+
+count = ENV['EMPEIRA_ADDON_CONFIG_TARGETS_COUNT']
+unless count&.match?(/\A[0-9]+\z/)
+  abort 'Error: Configure addons.sync.config.targets in .empeira.yaml (requires Empeira PR #16 support).'
+end
+root = ENV['EMPEIRA_CONTROL_REPO']
+abort 'Error: EMPEIRA_CONTROL_REPO is missing. Run via empeira addon sync.' if root.nil? || root.empty?
+
+targets = count.to_i.times.map do |index|
+  %w[SOURCE DESTINATION].map do |field|
+    value = ENV["EMPEIRA_ADDON_CONFIG_TARGETS_#{index}_#{field}"]
+    if value.nil? || value.strip.empty?
+      abort "Error: addons.sync.config.targets[#{index}].#{field.downcase} is required."
+    end
+    value
+  end
+end
+
+def resolve_path(path, root, source: false)
+  return path if path.match?(/\A[^\/]+:/)
+
+  resolved = path.start_with?('/') ? path : File.expand_path(path, root)
+  if !resolved.end_with?('/') && (path.end_with?('/') || (source && File.directory?(resolved)))
+    resolved += '/'
+  end
+  resolved
+end
+
+$stdout.sync = true
+targets.each_with_index do |(source, destination), index|
+  puts "Sync #{index + 1}/#{targets.size}", "Source: #{source}", "Destination: #{destination}"
+  arguments = ['rsync', '-a', '--exclude=.git/']
+  arguments << '--dry-run' if ARGV.include?('--dry-run')
+  arguments += ['--', resolve_path(source, root, source: true), resolve_path(destination, root)]
+  result = system(*arguments)
+  if result.nil?
+    warn 'Error: rsync is not installed or not available in PATH.'
+    warn 'Please install rsync and retry.'
+    exit 127
+  end
+  next if result
+
+  status = $?.exitstatus || 128 + $?.termsig
+  warn "Error: rsync failed for sync #{index + 1}/#{targets.size} (exit code #{status})."
+  exit status
+end
+puts 'Sync completed.'
