@@ -10,7 +10,8 @@ if ARGV.include?('--help')
     Usage: empeira addon sync [--dry-run] [--help]
 
     Synchronize all addons.sync.config.targets in order using host rsync.
-    Each target contains source and destination only.
+    Each target needs source and destination, with optional username for SSH.
+    Missing SSH usernames are requested interactively (once per host).
 
     --dry-run  Preview transfers without changing files.
     --help     Show this help.
@@ -30,13 +31,14 @@ root = ENV['EMPEIRA_CONTROL_REPO']
 abort 'Error: EMPEIRA_CONTROL_REPO is missing. Run via empeira addon sync.' if root.nil? || root.empty?
 
 targets = count.to_i.times.map do |index|
-  %w[SOURCE DESTINATION].map do |field|
+  paths = %w[SOURCE DESTINATION].map do |field|
     value = ENV["EMPEIRA_ADDON_CONFIG_TARGETS_#{index}_#{field}"]
     if value.nil? || value.strip.empty?
       abort "Error: addons.sync.config.targets[#{index}].#{field.downcase} is required."
     end
     value
   end
+  [*paths, ENV["EMPEIRA_ADDON_CONFIG_TARGETS_#{index}_USERNAME"]&.strip]
 end
 
 def resolve_path(path, root, source: false)
@@ -49,12 +51,49 @@ def resolve_path(path, root, source: false)
   resolved
 end
 
+def ssh_username(host, remembered)
+  return remembered[host] if remembered.key?(host)
+
+  unless $stdin.tty?
+    abort "Error: SSH username for #{host} is missing. Set targets[].username or use an interactive terminal."
+  end
+
+  print "SSH username for #{host}: "
+  name = $stdin.gets&.strip
+  abort "Error: SSH username for #{host} is required." if name.nil? || name.empty?
+
+  remembered[host] = name
+end
+
+def ssh_path(path, configured, remembered)
+  match = path.match(/\A([^\/:]+):/)
+  return path unless match
+
+  authority = match[1]
+  if authority.include?('@')
+    inline_name = authority.split('@', 2).first
+    if configured && !configured.empty? && configured != inline_name
+      abort "Error: SSH username conflicts with #{authority}; use only one username."
+    end
+    return path
+  end
+
+  username = configured.nil? || configured.empty? ? ssh_username(authority, remembered) : configured
+  unless username.match?(/\A[a-zA-Z0-9_][a-zA-Z0-9_.-]*\z/)
+    abort "Error: Invalid SSH username for #{authority}."
+  end
+
+  "#{username}@#{path}"
+end
+
 $stdout.sync = true
-targets.each_with_index do |(source, destination), index|
+remembered = {}
+targets.each_with_index do |(source, destination, username), index|
   puts "Sync #{index + 1}/#{targets.size}", "Source: #{source}", "Destination: #{destination}"
   arguments = ['rsync', '-a', '--exclude=.git/']
   arguments << '--dry-run' if ARGV.include?('--dry-run')
-  arguments += ['--', resolve_path(source, root, source: true), resolve_path(destination, root)]
+  arguments += ['--', ssh_path(resolve_path(source, root, source: true), username, remembered),
+                ssh_path(resolve_path(destination, root), username, remembered)]
   result = system(*arguments)
   if result.nil?
     warn 'Error: rsync is not installed or not available in PATH.'
