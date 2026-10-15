@@ -6,7 +6,7 @@ rsync. Configured sources and destinations run sequentially. AGPL-3.0-only.
 ## Installation
 
 Requires Empeira API 1 with the per-addon configuration exports introduced in
-[Empeira PR #16](https://github.com/c8m6/empeira/pull/16), Ruby on PATH, and an
+[Empeira PR #16](https://github.com/c8m6/empeira/pull/16), Ruby 3.1, 3.2, 3.3, 3.4 or 4.0 on PATH, and an
 already installed `rsync`. SSH is needed for remote transfers. Supported hosts
 are Linux, macOS and WSL2. The addon never installs packages or gems.
 
