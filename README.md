@@ -85,7 +85,12 @@ Please install rsync and retry.
 
 For more complex requirements, use rsync directly or a specialized tool.
 Run `ruby test/sync_test.rb` for five focused checks with a local rsync stub;
-see [CONTRIBUTING.md](CONTRIBUTING.md) for syntax checks. CI uses Ruby 3.4.
+see [CONTRIBUTING.md](CONTRIBUTING.md) for syntax checks. CI tests Ruby 3.1, 3.2, 3.3, 3.4 and 4.0 on Linux and macOS.
 
 Questions: [Empeira Discussions](https://github.com/c8m6/empeira/discussions).
 Security reports: [SECURITY.md](SECURITY.md).
+
+Ruby 3.1 is the minimum supported version. All five supported versions (3.1, 3.2,
+3.3, 3.4 and 4.0) run standalone behavior and actual addon/Core acceptance tests
+on Linux and macOS in regular CI. See [CONTRIBUTING.md](CONTRIBUTING.md) for
+local commands, optional dependencies and runtime/WSL2 validation limits.
