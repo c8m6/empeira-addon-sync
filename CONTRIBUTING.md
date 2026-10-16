@@ -16,7 +16,7 @@ git diff --check
 Report which checks actually ran. The tests use a temporary rsync stub; they
 do not connect to remote hosts. Preserve direct execution after checkout.
 
-Contributions are licensed AGPL-3.0-only. Retain attribution and verify the
+Contributions are licensed AGPL-3.0-or-later. Retain attribution and verify the
 provenance and license compatibility of third-party material. No CLA or copyright
 assignment is required. Use
 [Empeira Discussions](https://github.com/c8m6/empeira/discussions) for questions
