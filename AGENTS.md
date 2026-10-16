@@ -14,7 +14,7 @@ clearly when a prompt cannot be displayed. Keep the direct CLI limited to
 Relative local paths use `EMPEIRA_CONTROL_REPO`; SSH usernames only change
 the remote login part, never the remote path.
 
-Code and documentation use AGPL-3.0-only. Documentation and comments are English.
+Code and documentation use AGPL-3.0-or-later. Documentation and comments are English.
 Support Linux, macOS and WSL2 with portable Ruby operations. Keep tests small and
 synthetic; use a simple rsync stub, never production data or infrastructure.
 Update affected documentation. Do not create temporary planning documents.
