@@ -1,7 +1,7 @@
 # Empeira Addon Sync
 
 A small Ruby addon that synchronizes files and directories using the host's
-rsync. Configured sources and destinations run sequentially. AGPL-3.0-only.
+rsync. Configured sources and destinations run sequentially. AGPL-3.0-or-later.
 
 ## Installation
 
